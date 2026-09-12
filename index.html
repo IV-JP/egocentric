@@ -3,348 +3,540 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ego-Centric Project Management</title>
+    <title>Ego-Centric Project Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --primary: #2563eb;
-            --bg: #f3f4f6;
-            --card: #ffffff;
-            --text: #1f2937;
-            --border: #e5e7eb;
-        }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            margin: 0;
-            padding: 20px;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        .card {
-            background-color: var(--card);
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-        h1, h2, h3 { margin-top: 0; }
-        input, select, textarea, button {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 15px;
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        button {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        button:hover { background-color: #1d4ed8; }
-        .hidden { display: none; }
-        .row { display: flex; justify-content: space-between; align-items: center; }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid var(--border);
-        }
-        th { background-color: #f9fafb; }
-        .badge {
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: bold;
-        }
-        .badge.open { background-color: #fee2e2; color: #991b1b; }
-        .badge.cleared { background-color: #d1fae5; color: #065f46; }
-        canvas { max-width: 100%; height: auto; border: 1px solid var(--border); margin-bottom: 15px; }
-        .logout-btn { width: auto; background-color: #dc2626; padding: 5px 15px; }
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .toast-enter { animation: slideIn 0.3s ease-out forwards; }
+        .toast-exit { animation: slideOut 0.3s ease-in forwards; }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+        @keyframes slideOut { from { transform: translateX(0); } to { transform: translateX(100%); } }
     </style>
 </head>
-<body>
+<body class="text-gray-800 antialiased min-h-screen flex flex-col">
 
-<div class="container">
-    <!-- Login Section -->
-    <div id="login-section" class="card">
-        <h2>System Login</h2>
-        <input type="text" id="username" placeholder="Enter your Name" required>
-        <select id="role">
-            <option value="user">User</option>
-            <option value="admin">Admin</option>
-        </select>
-        <button onclick="login()">Login</button>
-    </div>
+    <nav class="bg-blue-600 text-white shadow-md w-full z-10">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="font-bold text-xl tracking-tight">Ego-Centric Tracker</div>
+            <div id="nav-actions">
+                <button id="nav-admin-login-btn" onclick="showAdminLogin()" class="text-sm bg-blue-700 hover:bg-blue-800 px-3 py-1.5 rounded transition">Admin Login</button>
+                <button id="nav-logout-btn" onclick="logout()" class="hidden text-sm bg-red-500 hover:bg-red-600 px-3 py-1.5 rounded transition">Logout</button>
+            </div>
+        </div>
+    </nav>
 
-    <!-- User Dashboard -->
-    <div id="user-section" class="hidden">
-        <div class="row">
-            <h2 id="user-welcome">User Dashboard</h2>
-            <button class="logout-btn" onclick="logout()">Logout</button>
+    <div id="toast-container" class="fixed top-20 right-4 z-50 flex flex-col gap-2"></div>
+
+    <main class="flex-grow flex items-center justify-center p-4 max-w-6xl mx-auto w-full">
+        
+        <div id="view-user-login" class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
+            <h2 class="text-2xl font-bold mb-6 text-center text-gray-700">User Login</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-1">Username</label>
+                    <input type="text" id="login-username" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Enter username">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-1">Password</label>
+                    <input type="password" id="login-password" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Enter password">
+                </div>
+                <button onclick="loginUser()" class="w-full bg-blue-600 text-white font-semibold py-2 rounded-lg hover:bg-blue-700 transition mt-2">Login as User</button>
+            </div>
         </div>
 
-        <!-- Ego Centric Data Collection Form -->
-        <div class="card">
-            <h3>Ego-Centric Asset Checkout</h3>
-            <label>Select Item:</label>
-            <select id="item-select" onchange="toggleCustomItem()">
-                <option value="iPhone">iPhone</option>
-                <option value="iPhone Cable">iPhone Cable</option>
-                <option value="Charger">Charger</option>
-                <option value="Head Mount">Head Mount</option>
-                <option value="Cooling Fan">Cooling Fan</option>
-                <option value="Custom">Custom Item...</option>
-            </select>
-            <input type="text" id="custom-item" class="hidden" placeholder="Specify custom item">
+        <div id="view-admin-login" class="hidden bg-white p-8 rounded-xl shadow-lg w-full max-w-md border-t-4 border-gray-800">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Admin Portal</h2>
+                <button onclick="showUserLogin()" class="text-sm text-blue-600 hover:underline">Back to User</button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-1">Admin ID</label>
+                    <input type="text" id="admin-username" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:gray-800 outline-none" placeholder="admin">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-1">Password</label>
+                    <input type="password" id="admin-password" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:gray-800 outline-none" placeholder="admin123">
+                </div>
+                <button onclick="loginAdmin()" class="w-full bg-gray-800 text-white font-semibold py-2 rounded-lg hover:bg-gray-900 transition mt-2">Access Dashboard</button>
+            </div>
+        </div>
 
-            <label>Capture Image (Data will be overlaid):</label>
-            <input type="file" id="image-upload" accept="image/*" capture="environment">
-            <button onclick="processAssetData()">Capture Data & Submit Asset</button>
+        <div id="view-user-dashboard" class="hidden w-full max-w-3xl flex-col gap-6">
             
-            <p id="gps-status" style="font-size: 12px; color: #666;"></p>
-            <canvas id="image-canvas" class="hidden"></canvas>
-        </div>
-
-        <!-- Ticketing System -->
-        <div class="card">
-            <h3>Raise a Ticket</h3>
-            <textarea id="ticket-desc" rows="3" placeholder="Describe the issue..."></textarea>
-            <button onclick="submitTicket()">Submit Ticket</button>
-        </div>
-    </div>
-
-    <!-- Admin Dashboard -->
-    <div id="admin-section" class="hidden">
-        <div class="row">
-            <h2>Admin Dashboard</h2>
-            <button class="logout-btn" onclick="logout()">Logout</button>
-        </div>
-
-        <div class="card">
-            <h3>Ego-Centric Asset Records</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>User</th>
-                        <th>Item</th>
-                        <th>Location (GPS)</th>
-                        <th>Image Record</th>
-                    </tr>
-                </thead>
-                <tbody id="admin-assets-table"></tbody>
-            </table>
-        </div>
-
-        <div class="card">
-            <h3>Ticketing System Management</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>User</th>
-                        <th>Issue Description</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody id="admin-tickets-table"></tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-<script>
-    let currentUser = null;
-    let assets = JSON.parse(localStorage.getItem('egoAssets')) || [];
-    let tickets = JSON.parse(localStorage.getItem('egoTickets')) || [];
-
-    function login() {
-        const name = document.getElementById('username').value.trim();
-        const role = document.getElementById('role').value;
-        if (!name) return alert('Please enter a name');
-        
-        currentUser = { name, role };
-        document.getElementById('login-section').classList.add('hidden');
-        
-        if (role === 'user') {
-            document.getElementById('user-section').classList.remove('hidden');
-            document.getElementById('user-welcome').innerText = `Welcome, ${name}`;
-        } else {
-            document.getElementById('admin-section').classList.remove('hidden');
-            renderAdminTables();
-        }
-    }
-
-    function logout() {
-        currentUser = null;
-        document.getElementById('user-section').classList.add('hidden');
-        document.getElementById('admin-section').classList.add('hidden');
-        document.getElementById('login-section').classList.remove('hidden');
-        document.getElementById('username').value = '';
-    }
-
-    function toggleCustomItem() {
-        const select = document.getElementById('item-select');
-        const customInput = document.getElementById('custom-item');
-        if (select.value === 'Custom') {
-            customInput.classList.remove('hidden');
-        } else {
-            customInput.classList.add('hidden');
-        }
-    }
-
-    function processAssetData() {
-        const selectValue = document.getElementById('item-select').value;
-        const itemName = selectValue === 'Custom' ? document.getElementById('custom-item').value : selectValue;
-        const fileInput = document.getElementById('image-upload');
-        const gpsStatus = document.getElementById('gps-status');
-
-        if (!itemName) return alert("Please specify the item.");
-        if (!fileInput.files[0]) return alert("Please capture or upload an image.");
-
-        gpsStatus.innerText = "Fetching GPS location...";
-
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const lat = position.coords.latitude.toFixed(5);
-                    const lon = position.coords.longitude.toFixed(5);
-                    const gpsString = `Lat: ${lat}, Lon: ${lon}`;
-                    gpsStatus.innerText = "GPS Location captured.";
-                    overlayDataOnImage(fileInput.files[0], itemName, gpsString);
-                },
-                (error) => {
-                    alert("GPS Error. Ensure location permissions are granted.");
-                    gpsStatus.innerText = "GPS Failed.";
-                    overlayDataOnImage(fileInput.files[0], itemName, "GPS Unavailable");
-                }
-            );
-        } else {
-            alert("Geolocation is not supported by this browser.");
-            overlayDataOnImage(fileInput.files[0], itemName, "GPS Unsupported");
-        }
-    }
-
-    function overlayDataOnImage(file, item, gpsCoords) {
-        const canvas = document.getElementById('image-canvas');
-        const ctx = canvas.getContext('2d');
-        const reader = new FileReader();
-
-        reader.onload = function(event) {
-            const img = new Image();
-            img.onload = function() {
-                canvas.width = img.width;
-                canvas.height = img.height;
+            <div class="bg-white p-6 rounded-xl shadow-md">
+                <h3 class="text-xl font-bold mb-4 border-b pb-2">Asset Checklist</h3>
                 
-                // Draw original image
-                ctx.drawImage(img, 0, 0);
+                <div class="space-y-3">
+                    <label class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border cursor-pointer hover:bg-gray-100 transition">
+                        <input type="checkbox" id="check-iphone" onchange="toggleAccessories()" class="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                        <span class="font-medium text-lg">iPhone</span>
+                    </label>
 
-                // Setup Text Overlay Box
-                ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
-                ctx.fillRect(0, canvas.height - 100, canvas.width, 100);
+                    <div id="accessories-panel" class="hidden ml-8 pl-4 border-l-2 border-blue-200 space-y-2 mt-2">
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" class="accessory-cb w-4 h-4 text-blue-600" value="Charger">
+                            <span>Charger</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" class="accessory-cb w-4 h-4 text-blue-600" value="Cable">
+                            <span>Cable</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" class="accessory-cb w-4 h-4 text-blue-600" value="Cooling Fan">
+                            <span>Cooling Fan</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" class="accessory-cb w-4 h-4 text-blue-600" value="Head Mount">
+                            <span>Head Mount</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" class="accessory-cb w-4 h-4 text-blue-600" value="Powerbank">
+                            <span>Powerbank</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="check-custom" onchange="toggleCustomInput()" class="w-4 h-4 text-blue-600" value="Other">
+                            <span>Other (Custom)</span>
+                        </label>
+                        <input type="text" id="custom-item-input" class="hidden mt-1 w-full max-w-xs border border-gray-300 rounded px-3 py-1 text-sm focus:ring-1 focus:ring-blue-500 outline-none" placeholder="Specify custom item...">
+                    </div>
+                </div>
 
-                // Overlay Text (Name, Item, GPS, Date)
-                ctx.fillStyle = "white";
-                ctx.font = `${Math.max(20, canvas.height / 25)}px Arial`;
-                const dateStr = new Date().toLocaleString();
+                <div class="mt-6 border-t pt-4">
+                    <h4 class="font-semibold mb-2">Capture Image Evidence (GPS will be added)</h4>
+                    <input type="file" id="image-upload" accept="image/*" capture="environment" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 mb-2">
+                    <p id="gps-status" class="text-xs text-gray-500 italic mb-4">GPS location will be automatically fetched on capture.</p>
+                    
+                    <button id="submit-asset-btn" onclick="processAssetData()" class="bg-green-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-green-700 transition shadow-sm w-full sm:w-auto">
+                        Submit Asset Record
+                    </button>
+                    
+                    <!-- Hidden canvas for image processing -->
+                    <canvas id="image-canvas" class="hidden max-w-full rounded mt-4 border border-gray-200"></canvas>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-md">
+                <h3 class="text-xl font-bold mb-4 border-b pb-2">Raise an Issue / Ticket</h3>
+                <textarea id="ticket-desc" rows="3" class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none resize-none mb-3" placeholder="Describe the problem with the equipment..."></textarea>
+                <button onclick="submitTicket()" class="bg-orange-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-orange-600 transition shadow-sm w-full sm:w-auto">
+                    Submit Ticket
+                </button>
+            </div>
+        </div>
+
+        <div id="view-admin-dashboard" class="hidden w-full max-w-5xl flex-col gap-6">
+            
+            <div class="bg-white p-6 rounded-xl shadow-md overflow-x-auto">
+                <div class="flex justify-between items-center mb-4 border-b pb-2">
+                    <h3 class="text-xl font-bold">Local Asset Records</h3>
+                    <span class="text-xs bg-yellow-100 text-yellow-800 py-1 px-2 rounded font-bold">Syncs with Google Sheets</span>
+                </div>
+                <table class="min-w-full text-sm text-left">
+                    <thead class="bg-gray-50 text-gray-700">
+                        <tr>
+                            <th class="px-4 py-3">Time / User</th>
+                            <th class="px-4 py-3">Items Issued</th>
+                            <th class="px-4 py-3">GPS Location</th>
+                            <th class="px-4 py-3">Image Evidence</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-assets-table" class="divide-y divide-gray-200"></tbody>
+                </table>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-md overflow-x-auto">
+                <h3 class="text-xl font-bold mb-4 border-b pb-2">Active Tickets</h3>
+                <table class="min-w-full text-sm text-left">
+                    <thead class="bg-gray-50 text-gray-700">
+                        <tr>
+                            <th class="px-4 py-3">User</th>
+                            <th class="px-4 py-3">Issue Description</th>
+                            <th class="px-4 py-3">Status</th>
+                            <th class="px-4 py-3">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-tickets-table" class="divide-y divide-gray-200"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // ==========================================
+        // GOOGLE SHEETS INTEGRATION URL
+        // Replace this string with the Web App URL you get from Google Apps Script
+        const GOOGLE_SCRIPT_URL = ""; 
+        // ==========================================
+
+        let currentUser = null;
+        let currentRole = null;
+        
+        // Mock databases for immediate frontend functionality
+        let localAssets = JSON.parse(localStorage.getItem('egocentric_assets')) || [];
+        let localTickets = JSON.parse(localStorage.getItem('egocentric_tickets')) || [];
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const colors = type === 'error' ? 'bg-red-500' : (type === 'warning' ? 'bg-orange-500' : 'bg-green-500');
+            
+            toast.className = `toast-enter ${colors} text-white px-6 py-3 rounded-lg shadow-lg font-medium flex items-center gap-2`;
+            toast.innerHTML = `
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${type === 'error' ? 'M6 18L18 6M6 6l12 12' : 'M5 13l4 4L19 7'}"></path></svg>
+                ${message}
+            `;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.replace('toast-enter', 'toast-exit');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function hideAllViews() {
+            document.getElementById('view-user-login').classList.add('hidden');
+            document.getElementById('view-admin-login').classList.add('hidden');
+            document.getElementById('view-user-dashboard').classList.add('hidden');
+            document.getElementById('view-admin-dashboard').classList.add('hidden');
+        }
+
+        function showUserLogin() { hideAllViews(); document.getElementById('view-user-login').classList.remove('hidden'); }
+        function showAdminLogin() { hideAllViews(); document.getElementById('view-admin-login').classList.remove('hidden'); }
+
+        function loginUser() {
+            const user = document.getElementById('login-username').value.trim();
+            const pass = document.getElementById('login-password').value.trim();
+            
+            if (!user || !pass) return showToast('Please enter username and password', 'error');
+            
+            currentUser = user;
+            currentRole = 'user';
+            
+            document.getElementById('nav-admin-login-btn').classList.add('hidden');
+            document.getElementById('nav-logout-btn').classList.remove('hidden');
+            
+            hideAllViews();
+            document.getElementById('view-user-dashboard').classList.remove('hidden');
+            showToast(`Welcome back, ${user}!`);
+        }
+
+        function loginAdmin() {
+            const user = document.getElementById('admin-username').value.trim();
+            const pass = document.getElementById('admin-password').value.trim();
+            
+            // Basic mock admin auth (In production, validate securely)
+            if (user === 'admin' && pass === 'admin123') {
+                currentUser = 'Admin';
+                currentRole = 'admin';
                 
-                ctx.fillText(`User: ${currentUser.name} | Item: ${item}`, 20, canvas.height - 65);
-                ctx.fillText(`GPS: ${gpsCoords} | Time: ${dateStr}`, 20, canvas.height - 25);
+                document.getElementById('nav-admin-login-btn').classList.add('hidden');
+                document.getElementById('nav-logout-btn').classList.remove('hidden');
+                
+                hideAllViews();
+                document.getElementById('view-admin-dashboard').classList.remove('hidden');
+                renderAdminTables();
+                showToast('Admin access granted.');
+            } else {
+                showToast('Invalid admin credentials', 'error');
+            }
+        }
 
-                canvas.classList.remove('hidden');
+        function logout() {
+            currentUser = null;
+            currentRole = null;
+            document.getElementById('nav-logout-btn').classList.add('hidden');
+            document.getElementById('nav-admin-login-btn').classList.remove('hidden');
+            
+            // Clear inputs
+            document.getElementById('login-username').value = '';
+            document.getElementById('login-password').value = '';
+            document.getElementById('admin-username').value = '';
+            document.getElementById('admin-password').value = '';
+            
+            showUserLogin();
+        }
 
-                // Save Record
-                const finalImageData = canvas.toDataURL('image/jpeg', 0.7);
-                assets.push({
-                    user: currentUser.name,
-                    item: item,
-                    gps: gpsCoords,
-                    image: finalImageData,
-                    time: dateStr
+        function toggleAccessories() {
+            const isChecked = document.getElementById('check-iphone').checked;
+            const panel = document.getElementById('accessories-panel');
+            if (isChecked) {
+                panel.classList.remove('hidden');
+            } else {
+                panel.classList.add('hidden');
+                // Uncheck everything inside
+                document.querySelectorAll('.accessory-cb').forEach(cb => cb.checked = false);
+                document.getElementById('check-custom').checked = false;
+                document.getElementById('custom-item-input').classList.add('hidden');
+            }
+        }
+
+        function toggleCustomInput() {
+            const isChecked = document.getElementById('check-custom').checked;
+            const input = document.getElementById('custom-item-input');
+            if (isChecked) {
+                input.classList.remove('hidden');
+                input.focus();
+            } else {
+                input.classList.add('hidden');
+                input.value = '';
+            }
+        }
+
+        function getSelectedItems() {
+            let items = [];
+            if (document.getElementById('check-iphone').checked) {
+                items.push("iPhone");
+                
+                document.querySelectorAll('.accessory-cb').forEach(cb => {
+                    if (cb.checked) items.push(cb.value);
                 });
-                localStorage.setItem('egoAssets', JSON.stringify(assets));
-                alert("Asset recorded successfully with watermarked image!");
-                
-                // Reset form
-                document.getElementById('image-upload').value = '';
-                document.getElementById('custom-item').value = '';
-            };
-            img.src = event.target.result;
-        };
-        reader.readAsDataURL(file);
-    }
 
-    function submitTicket() {
-        const desc = document.getElementById('ticket-desc').value;
-        if (!desc) return alert("Please enter ticket description");
-
-        tickets.push({
-            id: Date.now(),
-            user: currentUser.name,
-            description: desc,
-            status: 'open'
-        });
-        localStorage.setItem('egoTickets', JSON.stringify(tickets));
-        alert("Ticket submitted successfully!");
-        document.getElementById('ticket-desc').value = '';
-    }
-
-    function renderAdminTables() {
-        // Render Assets
-        const assetTable = document.getElementById('admin-assets-table');
-        assetTable.innerHTML = '';
-        assets.forEach(a => {
-            assetTable.innerHTML += `
-                <tr>
-                    <td>${a.user}<br><small>${a.time}</small></td>
-                    <td>${a.item}</td>
-                    <td>${a.gps}</td>
-                    <td><a href="${a.image}" target="_blank" style="color:var(--primary)">View Image</a></td>
-                </tr>
-            `;
-        });
-
-        // Render Tickets
-        const ticketTable = document.getElementById('admin-tickets-table');
-        ticketTable.innerHTML = '';
-        tickets.forEach(t => {
-            const statusBadge = t.status === 'open' 
-                ? '<span class="badge open">Open</span>' 
-                : '<span class="badge cleared">Cleared</span>';
-            
-            const actionBtn = t.status === 'open' 
-                ? `<button onclick="clearTicket(${t.id})" style="padding: 5px; font-size: 12px;">Clear Ticket</button>` 
-                : 'Resolved';
-
-            ticketTable.innerHTML += `
-                <tr>
-                    <td>${t.user}</td>
-                    <td>${t.description}</td>
-                    <td>${statusBadge}</td>
-                    <td>${actionBtn}</td>
-                </tr>
-            `;
-        });
-    }
-
-    function clearTicket(id) {
-        const ticketIndex = tickets.findIndex(t => t.id === id);
-        if (ticketIndex > -1) {
-            tickets[ticketIndex].status = 'cleared';
-            localStorage.setItem('egoTickets', JSON.stringify(tickets));
-            renderAdminTables();
+                if (document.getElementById('check-custom').checked) {
+                    const customVal = document.getElementById('custom-item-input').value.trim();
+                    if (customVal) items.push(`Custom: ${customVal}`);
+                }
+            }
+            return items.join(", ");
         }
-    }
-</script>
 
+        function processAssetData() {
+            const itemsString = getSelectedItems();
+            const fileInput = document.getElementById('image-upload');
+            const gpsStatus = document.getElementById('gps-status');
+            const btn = document.getElementById('submit-asset-btn');
+
+            if (!itemsString) return showToast("Please select at least one item.", "error");
+            if (!fileInput.files[0]) return showToast("Please capture an image.", "error");
+
+            btn.disabled = true;
+            btn.innerHTML = "Fetching GPS & Saving...";
+            gpsStatus.innerText = "Requesting GPS coordinates...";
+            gpsStatus.className = "text-xs text-blue-500 font-semibold mb-4";
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const coords = `${position.coords.latitude.toFixed(5)}, ${position.coords.longitude.toFixed(5)}`;
+                        gpsStatus.innerText = `GPS Location Acquired: ${coords}`;
+                        gpsStatus.className = "text-xs text-green-600 font-semibold mb-4";
+                        overlayDataOnImage(fileInput.files[0], itemsString, coords);
+                    },
+                    (error) => {
+                        showToast("GPS Error. Please allow location access.", "warning");
+                        gpsStatus.innerText = "GPS Failed. Proceeding without location.";
+                        gpsStatus.className = "text-xs text-red-500 font-semibold mb-4";
+                        overlayDataOnImage(fileInput.files[0], itemsString, "GPS Unavailable");
+                    },
+                    { enableHighAccuracy: true, timeout: 5000 }
+                );
+            } else {
+                overlayDataOnImage(fileInput.files[0], itemsString, "GPS Unsupported");
+            }
+        }
+
+        function overlayDataOnImage(file, itemsStr, gpsCoords) {
+            const canvas = document.getElementById('image-canvas');
+            const ctx = canvas.getContext('2d');
+            const reader = new FileReader();
+
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    // Resize logic to prevent massive base64 strings
+                    const MAX_WIDTH = 1200;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > MAX_WIDTH) {
+                        height = Math.round((height * MAX_WIDTH) / width);
+                        width = MAX_WIDTH;
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    
+                    // Draw original image
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // Add dark semi-transparent overlay at the bottom for text readability
+                    const boxHeight = 120;
+                    ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+                    ctx.fillRect(0, canvas.height - boxHeight, canvas.width, boxHeight);
+
+                    // Draw text
+                    ctx.fillStyle = "white";
+                    ctx.font = `${Math.max(16, canvas.height / 35)}px Inter, sans-serif`;
+                    const dateStr = new Date().toLocaleString();
+                    
+                    const paddingX = 20;
+                    ctx.fillText(`User: ${currentUser}`, paddingX, canvas.height - 85);
+                    ctx.fillText(`Items: ${itemsStr}`, paddingX, canvas.height - 55);
+                    ctx.fillText(`GPS: ${gpsCoords}  |  Time: ${dateStr}`, paddingX, canvas.height - 25);
+
+                    canvas.classList.remove('hidden');
+
+                    const finalImageData = canvas.toDataURL('image/jpeg', 0.6); // Compress slightly
+                    
+                    saveData(itemsStr, gpsCoords, finalImageData);
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function saveData(itemsStr, gpsCoords, imageBase64) {
+            const btn = document.getElementById('submit-asset-btn');
+            const payload = {
+                action: "submitAsset",
+                user: currentUser,
+                items: itemsStr,
+                gps: gpsCoords,
+                image: imageBase64
+            };
+
+            // 1. Save locally as fallback/cache
+            localAssets.unshift({
+                time: new Date().toLocaleString(),
+                user: currentUser,
+                items: itemsStr,
+                gps: gpsCoords,
+                image: imageBase64
+            });
+            localStorage.setItem('egocentric_assets', JSON.stringify(localAssets));
+
+            // 2. Attempt to save to Google Sheets if URL is configured
+            if (GOOGLE_SCRIPT_URL) {
+                try {
+                    await fetch(GOOGLE_SCRIPT_URL, {
+                        method: 'POST',
+                        mode: 'no-cors', // Required for Google Scripts from frontend without complex CORS setup
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    showToast("Asset saved to local and pushed to Google Sheets!");
+                } catch (e) {
+                    showToast("Saved locally, but Google Sheets connection failed.", "warning");
+                }
+            } else {
+                showToast("Saved locally. Add Google Script URL to sync to cloud.");
+            }
+
+            // Reset UI
+            btn.disabled = false;
+            btn.innerHTML = "Submit Asset Record";
+            document.getElementById('image-upload').value = '';
+            document.getElementById('gps-status').innerText = 'GPS location will be automatically fetched on capture.';
+            document.getElementById('gps-status').className = 'text-xs text-gray-500 italic mb-4';
+            
+            // Reset checkboxes
+            document.getElementById('check-iphone').checked = false;
+            toggleAccessories();
+        }
+
+        async function submitTicket() {
+            const desc = document.getElementById('ticket-desc').value.trim();
+            if (!desc) return showToast("Please describe the issue.", "error");
+
+            const payload = {
+                action: "submitTicket",
+                user: currentUser,
+                description: desc
+            };
+
+            // Save locally
+            localTickets.unshift({
+                id: Date.now(),
+                user: currentUser,
+                description: desc,
+                status: 'Open'
+            });
+            localStorage.setItem('egocentric_tickets', JSON.stringify(localTickets));
+
+            // Save to Google Sheets
+            if (GOOGLE_SCRIPT_URL) {
+                try {
+                    await fetch(GOOGLE_SCRIPT_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                } catch(e) {
+                    console.log("Failed to sync ticket to Google Sheets");
+                }
+            }
+
+            showToast("Ticket submitted successfully!");
+            document.getElementById('ticket-desc').value = '';
+        }
+
+        function renderAdminTables() {
+            const assetTable = document.getElementById('admin-assets-table');
+            assetTable.innerHTML = '';
+            
+            if (localAssets.length === 0) {
+                assetTable.innerHTML = `<tr><td colspan="4" class="px-4 py-6 text-center text-gray-500 italic">No assets recorded yet.</td></tr>`;
+            } else {
+                localAssets.forEach(a => {
+                    assetTable.innerHTML += `
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-3 border-b"><div class="font-bold">${a.user}</div><div class="text-xs text-gray-500">${a.time}</div></td>
+                            <td class="px-4 py-3 border-b">${a.items}</td>
+                            <td class="px-4 py-3 border-b text-xs">${a.gps}</td>
+                            <td class="px-4 py-3 border-b">
+                                <img src="${a.image}" alt="Record" class="w-20 h-auto rounded border shadow-sm cursor-pointer hover:scale-110 transition" onclick="window.open('${a.image}', '_blank')">
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+
+            const ticketTable = document.getElementById('admin-tickets-table');
+            ticketTable.innerHTML = '';
+            
+            if (localTickets.length === 0) {
+                ticketTable.innerHTML = `<tr><td colspan="4" class="px-4 py-6 text-center text-gray-500 italic">No active tickets.</td></tr>`;
+            } else {
+                localTickets.forEach(t => {
+                    const isClosed = t.status === 'Cleared';
+                    const statusClass = isClosed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+                    const btnClass = isClosed ? 'text-gray-400 cursor-not-allowed' : 'text-blue-600 hover:underline font-semibold';
+                    
+                    ticketTable.innerHTML += `
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-3 border-b font-medium">${t.user}</td>
+                            <td class="px-4 py-3 border-b">${t.description}</td>
+                            <td class="px-4 py-3 border-b">
+                                <span class="px-2 py-1 rounded text-xs font-bold ${statusClass}">${t.status}</span>
+                            </td>
+                            <td class="px-4 py-3 border-b">
+                                <button onclick="clearTicket(${t.id})" class="${btnClass}" ${isClosed ? 'disabled' : ''}>
+                                    ${isClosed ? 'Resolved' : 'Clear Ticket'}
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+        }
+
+        function clearTicket(id) {
+            const index = localTickets.findIndex(t => t.id === id);
+            if (index > -1) {
+                localTickets[index].status = 'Cleared';
+                localStorage.setItem('egocentric_tickets', JSON.stringify(localTickets));
+                renderAdminTables();
+                showToast("Ticket marked as cleared.");
+            }
+        }
+
+        // Initialize state
+        showUserLogin();
+
+    </script>
 </body>
 </html>
