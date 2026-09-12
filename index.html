@@ -42,7 +42,7 @@
                     <label class="block text-sm font-medium text-gray-600 mb-1">Password</label>
                     <input type="password" id="login-password" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Enter password">
                 </div>
-                <button onclick="loginUser()" class="w-full bg-blue-600 text-white font-semibold py-2 rounded-lg hover:bg-blue-700 transition mt-2">Login as User</button>
+                <button id="btn-user-login" onclick="loginUser()" class="w-full bg-blue-600 text-white font-semibold py-2 rounded-lg hover:bg-blue-700 transition mt-2">Login as User</button>
             </div>
         </div>
 
@@ -61,7 +61,7 @@
                     <label class="block text-sm font-medium text-gray-600 mb-1">Password</label>
                     <input type="password" id="admin-password" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:gray-800 outline-none" placeholder="admin123">
                 </div>
-                <button onclick="loginAdmin()" class="w-full bg-gray-800 text-white font-semibold py-2 rounded-lg hover:bg-gray-900 transition mt-2">Access Dashboard</button>
+                <button id="btn-admin-login" onclick="loginAdmin()" class="w-full bg-gray-800 text-white font-semibold py-2 rounded-lg hover:bg-gray-900 transition mt-2">Access Dashboard</button>
             </div>
         </div>
 
@@ -71,7 +71,6 @@
             <div class="bg-white p-6 rounded-xl shadow-md">
                 <h3 class="text-xl font-bold mb-4 border-b pb-2">Asset Menu</h3>
                 
-                <!-- NEW: Action Menu Toggle -->
                 <div class="mb-6">
                     <label class="block text-sm font-bold text-gray-700 mb-2">Select Transaction Menu *</label>
                     <div class="flex flex-col sm:flex-row bg-gray-200 p-1 rounded-lg border border-gray-300 w-full max-w-md gap-1">
@@ -126,7 +125,6 @@
                 <button onclick="submitTicket()" class="bg-orange-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-orange-600 transition shadow-sm w-full sm:w-auto">Submit Ticket</button>
             </div>
 
-            <!-- User's Assets Table -->
             <div class="bg-white p-6 rounded-xl shadow-md overflow-x-auto">
                 <h3 class="text-xl font-bold mb-4 border-b pb-2">My Submitted Assets</h3>
                 <table class="min-w-full text-sm text-left">
@@ -143,7 +141,6 @@
                 </table>
             </div>
 
-            <!-- User's Tickets Table -->
             <div class="bg-white p-6 rounded-xl shadow-md overflow-x-auto">
                 <div class="flex justify-between items-center mb-4 border-b pb-2">
                     <h3 class="text-xl font-bold">My Tickets</h3>
@@ -238,37 +235,71 @@
         function showUserLogin() { hideAllViews(); document.getElementById('view-user-login').classList.remove('hidden'); }
         function showAdminLogin() { hideAllViews(); document.getElementById('view-admin-login').classList.remove('hidden'); }
 
-        function loginUser() {
+        // EXCEL SHEET VERIFICATION LOGIC
+        async function loginUser() {
             const user = document.getElementById('login-username').value.trim();
             const pass = document.getElementById('login-password').value.trim();
             if (!user || !pass) return showToast('Please enter username and password', 'error');
             
-            currentUser = user;
-            currentRole = 'user';
-            
-            document.getElementById('nav-admin-login-btn').classList.add('hidden');
-            document.getElementById('nav-logout-btn').classList.remove('hidden');
-            hideAllViews();
-            document.getElementById('view-user-dashboard').classList.remove('hidden');
-            renderUserTables();
-            showToast(`Welcome back, ${user}!`);
+            const btn = document.getElementById('btn-user-login');
+            btn.innerHTML = "Verifying...";
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=login&username=${encodeURIComponent(user)}&password=${encodeURIComponent(pass)}`);
+                const data = await res.json();
+
+                if (data.status === 'success' && data.role === 'user') {
+                    currentUser = user;
+                    currentRole = 'user';
+                    
+                    document.getElementById('nav-admin-login-btn').classList.add('hidden');
+                    document.getElementById('nav-logout-btn').classList.remove('hidden');
+                    hideAllViews();
+                    document.getElementById('view-user-dashboard').classList.remove('hidden');
+                    renderUserTables();
+                    showToast(`Welcome back, ${user}!`);
+                } else {
+                    showToast('Invalid User Credentials', 'error');
+                }
+            } catch (err) {
+                showToast('Connection error. Please try again.', 'error');
+            }
+            btn.innerHTML = "Login as User";
+            btn.disabled = false;
         }
 
-        function loginAdmin() {
+        async function loginAdmin() {
             const user = document.getElementById('admin-username').value.trim();
             const pass = document.getElementById('admin-password').value.trim();
-            if (user === 'admin' && pass === 'admin123') {
-                currentUser = 'Admin';
-                currentRole = 'admin';
-                document.getElementById('nav-admin-login-btn').classList.add('hidden');
-                document.getElementById('nav-logout-btn').classList.remove('hidden');
-                hideAllViews();
-                document.getElementById('view-admin-dashboard').classList.remove('hidden');
-                renderAdminTables();
-                showToast('Admin access granted.');
-            } else {
-                showToast('Invalid admin credentials', 'error');
+            if (!user || !pass) return showToast('Please enter username and password', 'error');
+            
+            const btn = document.getElementById('btn-admin-login');
+            btn.innerHTML = "Verifying...";
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=login&username=${encodeURIComponent(user)}&password=${encodeURIComponent(pass)}`);
+                const data = await res.json();
+
+                if (data.status === 'success' && data.role === 'admin') {
+                    currentUser = user;
+                    currentRole = 'admin';
+                    
+                    document.getElementById('nav-admin-login-btn').classList.add('hidden');
+                    document.getElementById('nav-logout-btn').classList.remove('hidden');
+                    hideAllViews();
+                    document.getElementById('view-admin-dashboard').classList.remove('hidden');
+                    renderAdminTables();
+                    showToast('Admin access granted.');
+                } else {
+                    showToast('Invalid Admin Credentials', 'error');
+                }
+            } catch (err) {
+                showToast('Connection error. Please try again.', 'error');
             }
+            btn.innerHTML = "Access Dashboard";
+            btn.disabled = false;
         }
 
         function logout() {
@@ -320,9 +351,7 @@
             const manualAssetId = document.getElementById('manual-asset-id').value.trim();
             const rawItemsString = getSelectedItems();
             
-            // Capture the new "Menu / Transaction Type" selection
             const txType = document.querySelector('input[name="tx_type"]:checked').value;
-            
             const fileInput = document.getElementById('image-upload');
             const gpsStatus = document.getElementById('gps-status');
             const btn = document.getElementById('submit-asset-btn');
@@ -331,7 +360,6 @@
             if (!rawItemsString) return showToast("Please select at least one item.", "error");
             if (!fileInput.files[0]) return showToast("Please capture an image.", "error");
 
-            // Embed the Transaction Type directly into the items string
             const finalItemsString = `[${txType}] ${rawItemsString}`;
 
             btn.disabled = true;
@@ -386,8 +414,6 @@
                     const dateStr = new Date().toLocaleString();
                     
                     const paddingX = 20;
-                    
-                    // Will successfully print "Items: [RECEIVED & GIVEN] iPhone..." onto the image
                     ctx.fillText(`Asset ID: ${assetId}`, paddingX, canvas.height - 85);
                     ctx.fillText(`Items: ${itemsStr}`, paddingX, canvas.height - 55);
                     ctx.fillText(`GPS: ${gpsCoords}  |  Time: ${dateStr}`, paddingX, canvas.height - 25);
@@ -447,8 +473,6 @@
             document.getElementById('gps-status').innerText = 'GPS location will be automatically fetched on capture.';
             document.getElementById('gps-status').className = 'text-xs text-gray-500 italic mb-4';
             document.getElementById('check-iphone').checked = false;
-            
-            // Reset the menu toggle back to Issued by default
             document.querySelector('input[name="tx_type"][value="ISSUED"]').checked = true;
             toggleAccessories();
         }
