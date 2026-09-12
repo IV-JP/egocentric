@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ego-Centric Project Management</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --bg: #f3f4f6;
+            --card: #ffffff;
+            --text: #1f2937;
+            --border: #e5e7eb;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .card {
+            background-color: var(--card);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1, h2, h3 { margin-top: 0; }
+        input, select, textarea, button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover { background-color: #1d4ed8; }
+        .hidden { display: none; }
+        .row { display: flex; justify-content: space-between; align-items: center; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        th { background-color: #f9fafb; }
+        .badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .badge.open { background-color: #fee2e2; color: #991b1b; }
+        .badge.cleared { background-color: #d1fae5; color: #065f46; }
+        canvas { max-width: 100%; height: auto; border: 1px solid var(--border); margin-bottom: 15px; }
+        .logout-btn { width: auto; background-color: #dc2626; padding: 5px 15px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Login Section -->
+    <div id="login-section" class="card">
+        <h2>System Login</h2>
+        <input type="text" id="username" placeholder="Enter your Name" required>
+        <select id="role">
+            <option value="user">User</option>
+            <option value="admin">Admin</option>
+        </select>
+        <button onclick="login()">Login</button>
+    </div>
+
+    <!-- User Dashboard -->
+    <div id="user-section" class="hidden">
+        <div class="row">
+            <h2 id="user-welcome">User Dashboard</h2>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </div>
+
+        <!-- Ego Centric Data Collection Form -->
+        <div class="card">
+            <h3>Ego-Centric Asset Checkout</h3>
+            <label>Select Item:</label>
+            <select id="item-select" onchange="toggleCustomItem()">
+                <option value="iPhone">iPhone</option>
+                <option value="iPhone Cable">iPhone Cable</option>
+                <option value="Charger">Charger</option>
+                <option value="Head Mount">Head Mount</option>
+                <option value="Cooling Fan">Cooling Fan</option>
+                <option value="Custom">Custom Item...</option>
+            </select>
+            <input type="text" id="custom-item" class="hidden" placeholder="Specify custom item">
+
+            <label>Capture Image (Data will be overlaid):</label>
+            <input type="file" id="image-upload" accept="image/*" capture="environment">
+            <button onclick="processAssetData()">Capture Data & Submit Asset</button>
+            
+            <p id="gps-status" style="font-size: 12px; color: #666;"></p>
+            <canvas id="image-canvas" class="hidden"></canvas>
+        </div>
+
+        <!-- Ticketing System -->
+        <div class="card">
+            <h3>Raise a Ticket</h3>
+            <textarea id="ticket-desc" rows="3" placeholder="Describe the issue..."></textarea>
+            <button onclick="submitTicket()">Submit Ticket</button>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div id="admin-section" class="hidden">
+        <div class="row">
+            <h2>Admin Dashboard</h2>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </div>
+
+        <div class="card">
+            <h3>Ego-Centric Asset Records</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Item</th>
+                        <th>Location (GPS)</th>
+                        <th>Image Record</th>
+                    </tr>
+                </thead>
+                <tbody id="admin-assets-table"></tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h3>Ticketing System Management</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Issue Description</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="admin-tickets-table"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentUser = null;
+    let assets = JSON.parse(localStorage.getItem('egoAssets')) || [];
+    let tickets = JSON.parse(localStorage.getItem('egoTickets')) || [];
+
+    function login() {
+        const name = document.getElementById('username').value.trim();
+        const role = document.getElementById('role').value;
+        if (!name) return alert('Please enter a name');
+        
+        currentUser = { name, role };
+        document.getElementById('login-section').classList.add('hidden');
+        
+        if (role === 'user') {
+            document.getElementById('user-section').classList.remove('hidden');
+            document.getElementById('user-welcome').innerText = `Welcome, ${name}`;
+        } else {
+            document.getElementById('admin-section').classList.remove('hidden');
+            renderAdminTables();
+        }
+    }
+
+    function logout() {
+        currentUser = null;
+        document.getElementById('user-section').classList.add('hidden');
+        document.getElementById('admin-section').classList.add('hidden');
+        document.getElementById('login-section').classList.remove('hidden');
+        document.getElementById('username').value = '';
+    }
+
+    function toggleCustomItem() {
+        const select = document.getElementById('item-select');
+        const customInput = document.getElementById('custom-item');
+        if (select.value === 'Custom') {
+            customInput.classList.remove('hidden');
+        } else {
+            customInput.classList.add('hidden');
+        }
+    }
+
+    function processAssetData() {
+        const selectValue = document.getElementById('item-select').value;
+        const itemName = selectValue === 'Custom' ? document.getElementById('custom-item').value : selectValue;
+        const fileInput = document.getElementById('image-upload');
+        const gpsStatus = document.getElementById('gps-status');
+
+        if (!itemName) return alert("Please specify the item.");
+        if (!fileInput.files[0]) return alert("Please capture or upload an image.");
+
+        gpsStatus.innerText = "Fetching GPS location...";
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude.toFixed(5);
+                    const lon = position.coords.longitude.toFixed(5);
+                    const gpsString = `Lat: ${lat}, Lon: ${lon}`;
+                    gpsStatus.innerText = "GPS Location captured.";
+                    overlayDataOnImage(fileInput.files[0], itemName, gpsString);
+                },
+                (error) => {
+                    alert("GPS Error. Ensure location permissions are granted.");
+                    gpsStatus.innerText = "GPS Failed.";
+                    overlayDataOnImage(fileInput.files[0], itemName, "GPS Unavailable");
+                }
+            );
+        } else {
+            alert("Geolocation is not supported by this browser.");
+            overlayDataOnImage(fileInput.files[0], itemName, "GPS Unsupported");
+        }
+    }
+
+    function overlayDataOnImage(file, item, gpsCoords) {
+        const canvas = document.getElementById('image-canvas');
+        const ctx = canvas.getContext('2d');
+        const reader = new FileReader();
+
+        reader.onload = function(event) {
+            const img = new Image();
+            img.onload = function() {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                
+                // Draw original image
+                ctx.drawImage(img, 0, 0);
+
+                // Setup Text Overlay Box
+                ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+                ctx.fillRect(0, canvas.height - 100, canvas.width, 100);
+
+                // Overlay Text (Name, Item, GPS, Date)
+                ctx.fillStyle = "white";
+                ctx.font = `${Math.max(20, canvas.height / 25)}px Arial`;
+                const dateStr = new Date().toLocaleString();
+                
+                ctx.fillText(`User: ${currentUser.name} | Item: ${item}`, 20, canvas.height - 65);
+                ctx.fillText(`GPS: ${gpsCoords} | Time: ${dateStr}`, 20, canvas.height - 25);
+
+                canvas.classList.remove('hidden');
+
+                // Save Record
+                const finalImageData = canvas.toDataURL('image/jpeg', 0.7);
+                assets.push({
+                    user: currentUser.name,
+                    item: item,
+                    gps: gpsCoords,
+                    image: finalImageData,
+                    time: dateStr
+                });
+                localStorage.setItem('egoAssets', JSON.stringify(assets));
+                alert("Asset recorded successfully with watermarked image!");
+                
+                // Reset form
+                document.getElementById('image-upload').value = '';
+                document.getElementById('custom-item').value = '';
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function submitTicket() {
+        const desc = document.getElementById('ticket-desc').value;
+        if (!desc) return alert("Please enter ticket description");
+
+        tickets.push({
+            id: Date.now(),
+            user: currentUser.name,
+            description: desc,
+            status: 'open'
+        });
+        localStorage.setItem('egoTickets', JSON.stringify(tickets));
+        alert("Ticket submitted successfully!");
+        document.getElementById('ticket-desc').value = '';
+    }
+
+    function renderAdminTables() {
+        // Render Assets
+        const assetTable = document.getElementById('admin-assets-table');
+        assetTable.innerHTML = '';
+        assets.forEach(a => {
+            assetTable.innerHTML += `
+                <tr>
+                    <td>${a.user}<br><small>${a.time}</small></td>
+                    <td>${a.item}</td>
+                    <td>${a.gps}</td>
+                    <td><a href="${a.image}" target="_blank" style="color:var(--primary)">View Image</a></td>
+                </tr>
+            `;
+        });
+
+        // Render Tickets
+        const ticketTable = document.getElementById('admin-tickets-table');
+        ticketTable.innerHTML = '';
+        tickets.forEach(t => {
+            const statusBadge = t.status === 'open' 
+                ? '<span class="badge open">Open</span>' 
+                : '<span class="badge cleared">Cleared</span>';
+            
+            const actionBtn = t.status === 'open' 
+                ? `<button onclick="clearTicket(${t.id})" style="padding: 5px; font-size: 12px;">Clear Ticket</button>` 
+                : 'Resolved';
+
+            ticketTable.innerHTML += `
+                <tr>
+                    <td>${t.user}</td>
+                    <td>${t.description}</td>
+                    <td>${statusBadge}</td>
+                    <td>${actionBtn}</td>
+                </tr>
+            `;
+        });
+    }
+
+    function clearTicket(id) {
+        const ticketIndex = tickets.findIndex(t => t.id === id);
+        if (ticketIndex > -1) {
+            tickets[ticketIndex].status = 'cleared';
+            localStorage.setItem('egoTickets', JSON.stringify(tickets));
+            renderAdminTables();
+        }
+    }
+</script>
+
+</body>
+</html>
